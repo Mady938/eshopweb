@@ -1,0 +1,60 @@
+# Comments are provided throughout this file to help you get started.
+# If you need more help, visit the Docker Compose reference guide at
+# https://docs.docker.com/go/compose-spec-reference/
+
+# Here the instructions define your application as a service called "server".
+# This service is built from the Dockerfile in the current directory.
+# You can add other services your application may depend on here, such as a
+# database or a cache. For examples, see the Awesome Compose repository:
+# https://github.com/docker/awesome-compose
+services:
+  server:
+    build:
+      context: .
+    depends_on:
+      - mysql
+    networks:
+      database:
+    volumes:
+      - .:/var/www/html
+    environment:
+      - NODE_ENV=development
+    ports:
+      - 80:80
+  mysql:
+    image: 'mysql/mysql-server:5.7'
+    ports:
+      - '${DB_PORT:-3306}:3306'
+    environment:
+      MYSQL_ROOT_PASSWORD: '${DB_PASSWORD}'
+      MYSQL_ROOT_HOST: '%'
+      MYSQL_DATABASE: '${DB_DATABASE}'
+      MYSQL_USER: '${DB_USERNAME}'
+      MYSQL_PASSWORD: '${DB_PASSWORD}'
+      MYSQL_ALLOW_EMPTY_PASSWORD: 1
+    networks:
+      database:
+    volumes:
+      - 'db-data:/var/lib/mysql'
+      - './docker/mysql:/etc/mysql'
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-p${DB_PASSWORD}"]
+      retries: 3
+      timeout: 5s
+  phpmyadmin:
+    depends_on:
+      - mysql
+    image: phpmyadmin
+    environment:
+      PMA_PORT: '${DB_SOURCE_PORT:-3306}'
+      PMA_HOST: mysql
+      PMA_USER: ${DB_USERNAME}
+      PMA_PASSWORD: ${DB_PASSWORD}
+    networks:
+      database:
+    ports:
+      - 8080:80
+volumes:
+  db-data:
+networks:
+  database:

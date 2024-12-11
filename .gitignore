@@ -6,3 +6,6 @@ assets/front_end/modern/images/*
 /.vscode/
 /dist/
 /node_modules/
+/vendor/
+.idea
+firebase-config.js
