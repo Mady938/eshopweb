@@ -17,24 +17,10 @@
         "preferred-install": "dist",
         "sort-packages": true
     },
-    "scripts": {
-        "docker:up" : [
-            "docker compose --env-file docker.env up --build -d"
-        ],
-        "docker:down" : [
-            "docker compose --env-file docker.env down"
-        ],
-        "docker:install" : [
-            "docker exec eshopweb-server-1 npm i",
-            "docker exec eshopweb-server-1 composer install"
-        ],
-        "docker:build" : [
-            "docker exec eshopweb-server-1 npx gulp"
-        ]
-    },
     "minimum-stability": "stable",
     "prefer-stable": true,
     "require": {
-        "php": "^7.3"
+        "php": "^7.3",
+        "ext-intl": "*"
     }
 }

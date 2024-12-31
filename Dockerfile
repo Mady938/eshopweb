@@ -78,18 +78,14 @@ RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
     && apt-get install -y nodejs \
     && curl -sLS https://getcomposer.org/installer | php -- --install-dir=/usr/bin/ --filename=composer \
     && apt-get -y autoremove \
-    && apt-get clean \
-    && chown -R www-data:www-data /var/www/html
+    && apt-get clean
+
+RUN useradd -mU -s /bin/bash doomer
 
 # Use the default production configuration for PHP runtime arguments, see
 # https://github.com/docker-library/docs/tree/master/php#configuration
 RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
 
-# Copy the app dependencies from the previous install stage.
-COPY --from=composer app/vendor/ /var/www/html/vendor
-# Copy the app files from the app directory.
-COPY . /var/www/html
-
 # Switch to a non-privileged user (defined in the base image) that the app will run under.
 # See https://docs.docker.com/go/dockerfile-user-best-practices/
-#USER www-data
+USER doomer

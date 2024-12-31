@@ -9,3 +9,5 @@ assets/front_end/modern/images/*
 /vendor/
 .idea
 firebase-config.js
+
+.env
