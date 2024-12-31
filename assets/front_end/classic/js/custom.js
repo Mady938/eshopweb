@@ -25,16 +25,16 @@ function queryParams(p) {
         search: p.search
     };
 }
-$(document).on('submit', '.form-submit-event', function(e) {
-    e.preventDefault();
-    var formData = new FormData(this);
-    var form_id = $(this).attr("id");
-    var error_box = $('#error_box', this);
-    var submit_btn = $(this).find('.submit_btn');
-    var btn_html = $(this).find('.submit_btn').html();
-    var btn_val = $(this).find('.submit_btn').val();
-    var button_text = (btn_html != '' || btn_html != 'undefined') ? btn_html : btn_val;
 
+$(document).on('submit', '.form-submit-event', function (e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    const form_id = $(this).attr("id");
+    const error_box = $('#error_box', this);
+    const submit_btn = $(this).find('.submit_btn');
+    const btn_html = $(this).find('.submit_btn').html();
+    const btn_val = $(this).find('.submit_btn').val();
+    const button_text = (btn_html != '' || btn_html != 'undefined') ? btn_html : btn_val;
 
     formData.append(csrfName, csrfHash);
 
@@ -42,7 +42,7 @@ $(document).on('submit', '.form-submit-event', function(e) {
         type: 'POST',
         url: $(this).attr('action'),
         data: formData,
-        beforeSend: function() {
+        beforeSend: function () {
             submit_btn.html('Please Wait..');
             submit_btn.attr('disabled', true);
         },
@@ -50,9 +50,9 @@ $(document).on('submit', '.form-submit-event', function(e) {
         contentType: false,
         processData: false,
         dataType: 'json',
-        success: function(result) {
-            csrfName = result['csrfName'];
-            csrfHash = result['csrfHash'];
+        success: function (result) {
+            window.csrfName = result['csrfName'];
+            window.csrfHash = result['csrfHash'];
             if (result['error'] == true) {
                 error_box.addClass("rounded p-3 alert alert-danger").removeClass('d-none alert-success');
                 error_box.show().delay(5000).fadeOut();
@@ -72,105 +72,87 @@ $(document).on('submit', '.form-submit-event', function(e) {
             }
         }
     });
-    setTimeout(function() { location.reload(); }, 600);
+    setTimeout(function () {
+        location.reload();
+    }, 600);
 });
 
 /**
  * Set up UI event listeners and registering Firebase auth listeners.
  */
-window.onload = function() {
+window.onload = function () {
     // Event bindings.
-    document.getElementById('send-otp-form').addEventListener('submit', onSignInSubmit);
-    document.getElementById('phone-number').addEventListener('keyup', updateSignInButtonUI);
-    document.getElementById('phone-number').addEventListener('change', updateSignInButtonUI);
+    $(document).on('submit', '#sign-up-form', onSignInSubmit);
+    $(document).on('keyup', '#phone-number', updateSignInButtonUI);
+    $(document).on('change', '#phone-number', updateSignInButtonUI);
 };
+
 /**
  * Function called when clicking the Login/Logout button.
  */
 function onSignInSubmit(e) {
     e.preventDefault();
     if (isPhoneNumberValid()) {
-        $('#send-otp-button').html('Please Wait...');
-        var response = is_user_exist();
+        $('#register-button').html('Please Wait...').attr('disabled', true);
+        const response = is_user_exist();
         //console.log(response);
         updateSignInButtonUI();
-        if (response.error == true) {
+        if (response.error === true) {
             $('#is-user-exist-error').html(response.message);
-            $('#send-otp-button').html('Send OTP');
+            $('#register-button').html('Register').attr('disabled', false);
         } else {
             window.signingIn = true;
 
-            var phoneNumber = getPhoneNumberFromUserInput();
-            var appVerifier = window.recaptchaVerifier;
-            firebase.auth().signInWithPhoneNumber(phoneNumber, appVerifier).then(function(confirmationResult) {
-                $('#send-otp-button').html('Send OTP');
-                $('.send-otp-form').unblock();
-                window.signingIn = false;
-                updateSignInButtonUI();
-                resetRecaptcha();
-                $('#send-otp-form').hide();
-                $('#otp_div').show();
-                $('#verify-otp-form').removeClass('d-none');
-                $(document).on('submit', '#verify-otp-form', function(e) {
-                    e.preventDefault();
-                    $("#registration-error").html('');
-                    var code = $('#otp').val();
-                    var formdata = new FormData(this);
-                    var url = $(this).attr('action');
-                    $('#register_submit_btn').html('Please Wait...').attr('disabled', true);
-                    confirmationResult.confirm(code).then(function(result) {
-                        formdata.append(csrfName, csrfHash);
-                        formdata.append('mobile', $('#phone-number').val());
-                        formdata.append('country_code', $('.selected-dial-code').text());
-                        $.ajax({
-                            type: 'POST',
-                            url: url,
-                            data: formdata,
-                            processData: false,
-                            contentType: false,
-                            cache: false,
-                            dataType: 'json',
-                            beforeSend: function() {
-                                $('#register_submit_btn').html('Please Wait...').attr('disabled', true);
-                            },
-                            success: function(result) {
-                                csrfName = result.csrfName;
-                                csrfHash = result.csrfHash;
-                                $('#register_submit_btn').html('Submit').attr('disabled', false);
-                                $("#registration-error").html(result.message).show();
-                                setTimeout(function() {
-                                    $('#login_div').removeClass('hide');
-                                    $('#login').addClass('active');
+            $("#registration-error").html('');
+            const htmlForm = $('#sign-up-form').get(0);
+            const url = htmlForm.getAttribute('action');
 
-                                    $('#register_div').addClass('hide');
-                                    $('#register').removeClass('active');
-                                }, 2000)
-                            }
-                        });
-                    }).catch(function(error) {
-                        $('#register_submit_btn').html('Please Wait...').attr('disabled', true);
-                        $("#registration-error").html("Invalid OTP. Please Enter Valid OTP").show();
-                    });
-                });
-            }).catch(function(error) {
-                window.signingIn = false;
-                $("#is-user-exist-error").html(error.message).show();
-                $('#send-otp-button').html('Send OTP');
-                updateSignInButtonUI();
-                resetRecaptcha();
+            const formData = new FormData(htmlForm);
+            formData.append(window.csrfName, window.csrfHash);
+            formData.append('mobile', $('#phone-number').val());
+            formData.append('country_code', $('.selected-dial-code').text());
+
+            $('#is-user-exist-error').html(formData.get("mobile"), formData.get("country_code"));
+
+            $.ajax({
+                type: 'POST',
+                url,
+                data: formData,
+                processData: false,
+                contentType: false,
+                cache: false,
+                dataType: 'json',
+                success: function (result) {
+                    window.csrfName = result.csrfName;
+                    window.csrfHash = result.csrfHash;
+                    $('#register-button').html('Register').attr('disabled', false);
+                    $("#registration-error").html(result.message).show();
+
+                    $('.sign-up-form').unblock();
+                    window.signingIn = false;
+                    updateSignInButtonUI();
+                    resetRecaptcha();
+
+                    if (result.error === false) {
+                        setTimeout(function () {
+                            const loginForm = $('#login_form');
+                            loginForm.find('[name="identity"]').val(formData.get('mobile'));
+                            loginForm.find('[name="password"]').val(formData.get('password'));
+                            loginForm.submit();
+                        }, 2000);
+                    }
+                },
             });
         }
     }
 }
-$(document).on('click', '#resend-otp', function(e) {
-    e.preventDefault();
-});
+
 /**
  * Reads the phone number from the user input.
  */
 function getPhoneNumberFromUserInput() {
-    var countrycode = $('.selected-dial-code').html();
-    var phonenumber = $('#phone-number').val();
+    const countrycode = $('.selected-dial-code').html();
+    const phonenumber = $('#phone-number').val();
     return countrycode + phonenumber;
 }
 
@@ -178,8 +160,8 @@ function getPhoneNumberFromUserInput() {
  * Returns true if the phone number is valid.
  */
 function isPhoneNumberValid() {
-    var pattern = /^\+[0-9\s\-\(\)]+$/;
-    var phoneNumber = getPhoneNumberFromUserInput();
+    const pattern = /^\+[0-9\s\-\(\)]+$/;
+    const phoneNumber = getPhoneNumberFromUserInput();
     return phoneNumber.search(pattern) !== -1;
 }
 
@@ -187,7 +169,7 @@ function isPhoneNumberValid() {
  * This resets the recaptcha widget.
  */
 function resetRecaptcha() {
-    return window.recaptchaVerifier.render().then(function(widgetId) {
+    return window.recaptchaVerifier.render().then(function (widgetId) {
         grecaptcha.reset(widgetId);
     });
 }
@@ -195,54 +177,56 @@ function resetRecaptcha() {
 /**
  * Updates the Sign-in button state depending on ReCaptcha and form values state.
  */
-function updateSignInButtonUI() {}
+function updateSignInButtonUI() {
+}
 
 function is_user_exist(phone_number = '') {
-    if (phone_number == '') {
-        var phoneNumber = $('#phone-number').val();
+    let phoneNumber;
+    if (phone_number === '') {
+        phoneNumber = $('#phone-number').val();
     } else {
-        var phoneNumber = phone_number;
+        phoneNumber = phone_number;
     }
-    var response;
+    let response;
     $.ajax({
         type: 'POST',
         async: false,
         url: base_url + 'auth/verify_user',
-        data: { mobile: phoneNumber, [csrfName]: csrfHash },
+        data: {mobile: phoneNumber, [csrfName]: csrfHash},
         dataType: 'json',
-        success: function(result) {
-            csrfName = result['csrfName'];
-            csrfHash = result['csrfHash'];
+        success: function (result) {
+            window.csrfName = result['csrfName'];
+            window.csrfHash = result['csrfHash'];
             response = result
         }
     });
     return response;
 }
 
-$(document).on('submit', '.sign-up-form', function(e) {
-    e.preventDefault();
-    var countrycode = $('.selected-dial-code').html();
-    $phonenumber = $('#phone-number').val();
-    $username = $('input[name="username"]').val();
-    $email = $('input[name="email"]').val();
-    $passwd = $('input[name="password"]').val();
-
-    $.ajax({
-        type: 'POST',
-        url: base_url + 'auth/register_user',
-        data: { country_code: countrycode, mobile: $phonenumber, name: $username, email: $email, password: $passwd, [csrfName]: csrfHash },
-        dataType: 'json',
-        success: function(result) {
-            if (result.error == true) {
-                $('#sign-up-error').html('<span class="text-danger" >' + response.message + '</span>');
-            }
-        }
-    });
-});
+// $(document).on('submit', '.sign-up-form', function(e) {
+//     e.preventDefault();
+//     var countrycode = $('.selected-dial-code').html();
+//     $phonenumber = $('#phone-number').val();
+//     $username = $('input[name="username"]').val();
+//     $email = $('input[name="email"]').val();
+//     $passwd = $('input[name="password"]').val();
+//
+//     $.ajax({
+//         type: 'POST',
+//         url: base_url + 'auth/register_user',
+//         data: { country_code: countrycode, mobile: $phonenumber, name: $username, email: $email, password: $passwd, [csrfName]: csrfHash },
+//         dataType: 'json',
+//         success: function(result) {
+//             if (result.error === true) {
+//                 $('#sign-up-error').html('<span class="text-danger" >' + response.message + '</span>');
+//             }
+//         }
+//     });
+// });
 
 function formatRepo(repo) {
     if (repo.loading) return repo.text;
-    var markup = "<div class='select2-result-repository clearfix'>" +
+    let markup = "<div class='select2-result-repository clearfix'>" +
         "<div class='select2-result-repository__avatar'><img src='" + repo.image_sm + "' /></div>" +
         "<div class='select2-result-repository__meta'>" +
         "<div class='select2-result-repository__title'>" + repo.name + "</div>";
@@ -258,18 +242,18 @@ function formatRepoSelection(repo) {
     return repo.name || repo.text;
 }
 
-var search_products = $(".search_product").select2({
+const search_products = $(".search_product").select2({
     ajax: {
         url: base_url + 'home/get_products',
         dataType: 'json',
         delay: 250,
-        data: function(params) {
+        data: function (params) {
             return {
                 search: params.term, // search term
                 page: params.page
             };
         },
-        processResults: function(response, params) {
+        processResults: function (response, params) {
             // parse the results into the format expected by Select2
             // since we are using custom formatting functions we do not need to
             // alter the remote JSON data, except to indicate that infinite
@@ -285,7 +269,7 @@ var search_products = $(".search_product").select2({
         },
         cache: true
     },
-    escapeMarkup: function(markup) {
+    escapeMarkup: function (markup) {
         return markup;
     },
     minimumInputLength: 1,
@@ -295,30 +279,30 @@ var search_products = $(".search_product").select2({
     placeholder: 'Search for products'
 });
 
-search_products.on('select2:select', function(e) {
+search_products.on('select2:select', function (e) {
     var data = e.params.data;
     if (data.link != undefined && data.link != null) {
         window.location.href = data.link;
     }
 });
 
-$("#leftside-navigation .sub-menu > a").click(function(e) {
+$("#leftside-navigation .sub-menu > a").click(function (e) {
     $("#leftside-navigation ul ul").slideUp();
 
-    (!$('#leftside-navigation .sub-menu > a').next().is(":visible")) ? $('#leftside-navigation .sub-menu > a').find('.arrow').removeClass('fa-angle-down').addClass('fa-angle-left'): '';
+    (!$('#leftside-navigation .sub-menu > a').next().is(":visible")) ? $('#leftside-navigation .sub-menu > a').find('.arrow').removeClass('fa-angle-down').addClass('fa-angle-left') : '';
     $(this).find('.arrow').hasClass('fa-angle-left') ? $(this).find('.arrow').removeClass('fa-angle-left').addClass('fa-angle-down') : $(this).find('.arrow').removeClass('fa-angle-down').addClass('fa-angle-left');
     $(this).next().is(":visible") || $(this).next().slideDown();
     e.stopPropagation();
 })
 
-$('li.has-ul').click(function() {
+$('li.has-ul').click(function (event) {
     $(this).children('.sub-ul').slideToggle(500);
     $(this).toggleClass('active');
     event.preventDefault();
 });
 
 
-$('.add-to-fav-btn').on('click', function(e) {
+$('.add-to-fav-btn').on('click', function (e) {
     e.preventDefault();
     var formdata = new FormData();
     var product_id = $(this).data('product-id');
@@ -333,7 +317,7 @@ $('.add-to-fav-btn').on('click', function(e) {
         contentType: false,
         processData: false,
         dataType: 'json',
-        success: function(result) {
+        success: function (result) {
             csrfName = result.csrfName;
             csrfHash = result.csrfHash;
             if (result.error == true) {
@@ -352,7 +336,7 @@ $('.add-to-fav-btn').on('click', function(e) {
         }
     });
 });
-$(document).on('click', '#add_to_favorite_btn', function(e) {
+$(document).on('click', '#add_to_favorite_btn', function (e) {
     e.preventDefault();
     var formdata = new FormData();
     var product_id = $(this).data('product-id');
@@ -368,11 +352,11 @@ $(document).on('click', '#add_to_favorite_btn', function(e) {
         contentType: false,
         processData: false,
         dataType: 'json',
-        beforeSend: function() {
+        beforeSend: function () {
             fav_btn.attr('disabled', true);
             fav_btn.find('span').text('Please wait');
         },
-        success: function(result) {
+        success: function (result) {
             csrfName = result.csrfName;
             csrfHash = result.csrfHash;
             fav_btn.attr('disabled', false);
@@ -395,7 +379,7 @@ $(document).on('click', '#add_to_favorite_btn', function(e) {
     });
 });
 
-$(function() {
+$(function () {
     /* Instantiating iziModal */
     $(".auth-modal").iziModal({
         overlayClose: false,
@@ -416,7 +400,7 @@ $(function() {
             headerColor: '#f44336c4',
             arrowKeys: false,
             fullscreen: true,
-            onOpening: function(modal) {
+            onOpening: function (modal) {
                 modal.startLoading();
                 var limit = $('#review-image-title').data("review-limit");
                 var offset = $('#review-image-title').data("review-offset");
@@ -428,8 +412,8 @@ $(function() {
 
                 modal.stopLoading();
             },
-            onOpened: function() {
-                $("div").bind('wheel', function(e) {
+            onOpened: function () {
+                $("div").bind('wheel', function (e) {
                     // if(e.originalEvent.wheelDelta > 0) {
                     //     u++;
                     //     console.log("u "+u);
@@ -459,7 +443,7 @@ $(function() {
 
     function load_review_images(product_id, limit, offset, target = '#user_image_data') {
         $('#review-image-title').data('review-offset', offset + limit);
-        $.getJSON(base_url + 'products/get_rating?product_id=' + product_id + '&has_images=1&limit=' + limit + '&offset=' + offset, function(data) {
+        $.getJSON(base_url + 'products/get_rating?product_id=' + product_id + '&has_images=1&limit=' + limit + '&offset=' + offset, function (data) {
             $('#review-image-title').data('review-offset', offset + limit);
             image_data = "";
             var obj = 0;
@@ -482,10 +466,10 @@ $(function() {
         overlayClose: false,
         overlayColor: 'rgba(0, 0, 0, 0.6)',
         width: 1000,
-        onOpening: function(modal) {
+        onOpening: function (modal) {
             modal.startLoading();
             $('#modal-product-tags').html('');
-            $.getJSON(base_url + 'products/get-details/' + modal.$element.data('dataProductId'), function(data) {
+            $.getJSON(base_url + 'products/get-details/' + modal.$element.data('dataProductId'), function (data) {
                 var total_images = 0;
                 $('#modal-add-to-cart-button').attr('data-product-id', data.id);
                 if (data.type == "simple_product") {
@@ -614,13 +598,13 @@ $(function() {
                     '<img src="' + data.image_md + '">' +
                     '</div></div></div></div>';
                 var mobile_slider_image = '<div class="swiper-slide text-center"><img src="' + data.image_md + '"></div>';
-                var variant_images_md = data.variants.map(function(value, index) {
+                var variant_images_md = data.variants.map(function (value, index) {
                     return value.images_md;
                 });
 
-                $.each(variant_images_md, function(i, images) {
+                $.each(variant_images_md, function (i, images) {
                     if (images != null && images != '') {
-                        $.each(images, function(i, url) {
+                        $.each(images, function (i, url) {
                             thumb_images += '<div class="swiper-slide text-center">' +
                                 '<div class="product-view-grid">' +
                                 '<div class="product-view-image">' +
@@ -639,7 +623,7 @@ $(function() {
                         });
                     }
                 });
-                $.each(data.other_images_md, function(i, url) {
+                $.each(data.other_images_md, function (i, url) {
                     total_images++;
                     thumb_images += '<div class="swiper-slide text-center">' +
                         '<div class="product-view-grid">' +
@@ -664,14 +648,14 @@ $(function() {
                 var variant_attributes = '';
                 var is_image = 0;
                 var is_color = 0;
-                $.each(data.variant_attributes, function(i, e) {
+                $.each(data.variant_attributes, function (i, e) {
                     var attribute_ids = e.ids.split(',');
                     var attribute_values = e.values.split(',');
                     var swatche_types = e.swatche_type.split(',');
                     var swatche_values = e.swatche_value.split(',');
                     var style = '<style> .product-page-details .btn-group>.active { border: 1px solid black;}</style>';
                     variant_attributes += '<h4>' + e.attr_name + '</h4><div class="btn-group btn-group-toggle" data-toggle="buttons">';
-                    $.each(attribute_ids, function(j, id) {
+                    $.each(attribute_ids, function (j, id) {
                         var color_code = "";
                         if (swatche_types[j] == "1") {
                             is_color = 1;
@@ -718,7 +702,7 @@ $(function() {
                 }
                 var variants = '';
                 total_images = 1;
-                $.each(data.variants, function(i, e) {
+                $.each(data.variants, function (i, e) {
                     variants += '<input type="hidden" class="modal-product-variants" data-image-index="' + total_images + '" name="variants_ids" data-name="' + data.name + '" value="' + e.variant_ids + '" data-id="' + e.id + '" data-price="' + e.price + '" data-special_price="' + e.special_price + '">';
                     total_images += e.images.length;
                 });
@@ -734,7 +718,7 @@ $(function() {
                 $('#modal-product-no-of-ratings').text(data.no_of_ratings);
                 if (!$.isEmptyObject(data.tags)) {
                     var tags = 'Tags ';
-                    $.each(data.tags, function(i, e) {
+                    $.each(data.tags, function (i, e) {
                         tags += '<a href="' + base_url + 'products/tags/' + e + '" target="_blank"><span class="badge badge-secondary p-1 mr-1">' + e + '</span></a>';
                     });
                     $('#modal-product-tags').html(tags);
@@ -746,7 +730,7 @@ $(function() {
     });
 
     //Modal Product Variant Selection Event
-    $(document).on('change', '.modal-product-attributes', function(e) {
+    $(document).on('change', '.modal-product-attributes', function (e) {
         e.preventDefault();
         var selected_attributes = [];
         var attributes_length = "";
@@ -759,7 +743,7 @@ $(function() {
         var variant_ids = [];
         var image_indexes = [];
         var selected_image_index;
-        $('.modal-product-variants').each(function() {
+        $('.modal-product-variants').each(function () {
             prices = {
                 price: $(this).data('price'),
                 special_price: $(this).data('special_price')
@@ -771,7 +755,7 @@ $(function() {
             image_indexes.push($(this).data('image-index'));
         });
         attributes_length = variant.length;
-        $('.modal-product-attributes').each(function() {
+        $('.modal-product-attributes').each(function () {
             if ($(this).prop('checked')) {
                 selected_attributes.push($(this).val());
 
@@ -779,7 +763,7 @@ $(function() {
                     /* compare the arrays */
                     prices = [];
                     var selected_variant_id = '';
-                    $.each(variants, function(i, e) {
+                    $.each(variants, function (i, e) {
                         if (arrays_equal(selected_attributes, e)) {
                             is_variant_available = true;
                             prices.push(variant_prices[i]);
@@ -812,7 +796,7 @@ $(function() {
         });
     });
 
-    $('#modal-add-to-cart-button').on('click', function(e) {
+    $('#modal-add-to-cart-button').on('click', function (e) {
         e.preventDefault();
         var qty = $("#modal-product-quantity").val();
         var title = $('#modal-product-title').text();
@@ -845,10 +829,10 @@ $(function() {
                 [csrfName]: csrfHash,
             },
             dataType: 'json',
-            beforeSend: function() {
+            beforeSend: function () {
                 btn.html('Please Wait').text('Please Wait').attr('disabled', true);
             },
-            success: function(result) {
+            success: function (result) {
                 csrfName = result.csrfName;
                 csrfHash = result.csrfHash;
                 btn.html(btn_html).attr('disabled', false);
@@ -859,8 +843,8 @@ $(function() {
                     });
                     $('#cart-count').text(result.data.cart_count);
                     var html = '';
-                    $.each(result.data.items, function(i, e) {
-                        var variant = typeof(e.product_variants.variant_values) != 'undefined' && e.product_variants.variant_values != null ? e.product_variants.variant_values : '';
+                    $.each(result.data.items, function (i, e) {
+                        var variant = typeof (e.product_variants.variant_values) != 'undefined' && e.product_variants.variant_values != null ? e.product_variants.variant_values : '';
                         var price = e.special_price < e.price && e.special_price != 0 ? e.special_price : e.price;
                         html += '<div class="row">' +
                             '<div class="cart-product product-sm col-md-12">' +
@@ -882,7 +866,7 @@ $(function() {
                             '<i class="fa fa-trash"></i>' +
                             '</button>' +
                             '</div>' +
-                            '<div class="product-line-price align-self-center px-1">' + currency + ' ' + (min * price).toLocaleString(undefined, { minimumFractionDigits: 2 }) + '</div>' +
+                            '<div class="product-line-price align-self-center px-1">' + currency + ' ' + (min * price).toLocaleString(undefined, {minimumFractionDigits: 2}) + '</div>' +
                             '</div>' +
                             '</div>' +
                             '</div>';
@@ -894,7 +878,16 @@ $(function() {
                             icon: 'success',
                             title: "Item added to cart"
                         });
-                        var cart_item = { "product_variant_id": product_variant_id.trim(), "title": title, "description": description, "qty": min, "image": image, "price": price.trim(), "min": min, "step": step };
+                        var cart_item = {
+                            "product_variant_id": product_variant_id.trim(),
+                            "title": title,
+                            "description": description,
+                            "qty": min,
+                            "image": image,
+                            "price": price.trim(),
+                            "min": min,
+                            "step": step
+                        };
                         var cart = localStorage.getItem("cart");
                         cart = (localStorage.getItem("cart") !== null) ? JSON.parse(cart) : null;
                         if (cart !== null && cart !== undefined) {
@@ -916,7 +909,7 @@ $(function() {
     });
 
     /* JS inside the modal */
-    $(".auth-modal").on('click', 'header a', function(event) {
+    $(".auth-modal").on('click', 'header a', function (event) {
         event.preventDefault();
         window.signingIn = true;
         var index = $(this).index();
@@ -930,20 +923,20 @@ $(function() {
         }
     });
 
-    $(document).on('opening', '.auth-modal', function(e) {
+    $(document).on('opening', '.auth-modal', function (e) {
         $(this).removeClass('d-none');
         e.preventDefault();
         closeNav();
-        $('.send-otp-form')[0].reset();
-        $('.send-otp-form').show();
+        // $('.send-otp-form')[0].reset();
+        // $('.send-otp-form').show();
         $('.sign-up-form')[0].reset();
-        $('.sign-up-form').hide();
+        // $('.sign-up-form').hide();
         $('#is-user-exist-error').html('');
         $('#sign-up-error').html('');
 
         $('#recaptcha-container').html('');
         window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container');
-        window.recaptchaVerifier.render().then(function(widgetId) {
+        window.recaptchaVerifier.render().then(function (widgetId) {
             grecaptcha.reset(widgetId);
         });
 
@@ -968,23 +961,24 @@ $(function() {
             preventInvalidNumbers: true,
             separateDialCode: true,
             initialCountry: "auto",
-            geoIpLookup: function(callback) {
-                $.get("https://ipinfo.io", function() {}, "jsonp").always(function(resp) {
-                    var countryCode = (resp && resp.country) ? resp.country : "";
+            geoIpLookup: function (callback) {
+                $.get("https://ipinfo.io", function () {
+                }, "jsonp").always(function (resp) {
+                    const countryCode = (resp && resp.country) ? resp.country : "";
                     callback(countryCode);
                 });
             },
             utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.15/js/utils.js"
         });
 
-        var reset = function() {
+        var reset = function () {
             telInput.removeClass("error");
             errorMsg.addClass("hide");
             validMsg.addClass("hide");
         };
 
         // on blur: validate
-        telInput.blur(function() {
+        telInput.blur(function () {
             reset();
             if ($.trim(telInput.val())) {
                 if (telInput.intlTelInput("isValidNumber")) {
@@ -1001,7 +995,7 @@ $(function() {
 
     });
 
-    $("#quick-view").on('click', '.submit', function(event) {
+    $("#quick-view").on('click', '.submit', function (event) {
         event.preventDefault();
 
         var fx = "wobble", //wobble shake
@@ -1009,12 +1003,12 @@ $(function() {
 
         if (!$modal.hasClass(fx)) {
             $modal.addClass(fx);
-            setTimeout(function() {
+            setTimeout(function () {
                 $modal.removeClass(fx);
             }, 1500);
         }
     });
-    $("#quick-view").on('click', 'header a', function(event) {
+    $("#quick-view").on('click', 'header a', function (event) {
         event.preventDefault();
         var index = $(this).index();
         $(this).addClass('active').siblings('a').removeClass('active');
@@ -1027,7 +1021,7 @@ $(function() {
         }
     });
 
-    $("#quick-view").on('click', '.submit', function(event) {
+    $("#quick-view").on('click', '.submit', function (event) {
         event.preventDefault();
 
         var fx = "wobble", //wobble shake
@@ -1035,12 +1029,12 @@ $(function() {
 
         if (!$modal.hasClass(fx)) {
             $modal.addClass(fx);
-            setTimeout(function() {
+            setTimeout(function () {
                 $modal.removeClass(fx);
             }, 1500);
         }
     });
-    $("#quick-view").on('click', 'header a', function(event) {
+    $("#quick-view").on('click', 'header a', function (event) {
         event.preventDefault();
         var index = $(this).index();
         $(this).addClass('active').siblings('a').removeClass('active');
@@ -1055,18 +1049,25 @@ $(function() {
 
 });
 
-(function() {
-    function logElementEvent(eventName, element) {}
+(function () {
+    function logElementEvent(eventName, element) {
+    }
 
-    var callback_enter = function(element) {};
-    var callback_exit = function(element) {};
-    var callback_loading = function(element) {};
-    var callback_loaded = function(element) {};
-    var callback_error = function(element) {
+    var callback_enter = function (element) {
+    };
+    var callback_exit = function (element) {
+    };
+    var callback_loading = function (element) {
+    };
+    var callback_loaded = function (element) {
+    };
+    var callback_error = function (element) {
         "https://via.placeholder.com/440x560/?text=Error+Placeholder";
     };
-    var callback_finish = function() {};
-    var callback_cancel = function(element) {};
+    var callback_finish = function () {
+    };
+    var callback_cancel = function (element) {
+    };
 
     var ll = new LazyLoad({
         threshold: 0,
@@ -1080,7 +1081,7 @@ $(function() {
         callback_finish: callback_finish
     });
 })();
-(function() {
+(function () {
 
     var parent = document.querySelector(".range-slider");
     if (!parent) return;
@@ -1089,8 +1090,8 @@ $(function() {
         rangeS = parent.querySelectorAll("input[type=range]"),
         numberS = parent.querySelectorAll("input[type=number]");
 
-    rangeS.forEach(function(el) {
-        el.oninput = function() {
+    rangeS.forEach(function (el) {
+        el.oninput = function () {
             var slide1 = parseFloat(rangeS[0].value),
                 slide2 = parseFloat(rangeS[1].value);
 
@@ -1106,8 +1107,8 @@ $(function() {
         }
     });
 
-    numberS.forEach(function(el) {
-        el.oninput = function() {
+    numberS.forEach(function (el) {
+        el.oninput = function () {
             var number1 = parseFloat(numberS[0].value),
                 number2 = parseFloat(numberS[1].value);
 
@@ -1127,7 +1128,7 @@ $(function() {
 
 
 //Qty Counter
-$(document).on('change', 'input.in-num', function(e) {
+$(document).on('change', 'input.in-num', function (e) {
     e.preventDefault();
     var $input = $(this);
     if ($input.val() == null || typeof $input.val() == "string") {
@@ -1140,7 +1141,7 @@ $(document).on('change', 'input.in-num', function(e) {
         }
     }
 });
-$(document).on('focusout', '.in-num', function(e) {
+$(document).on('focusout', '.in-num', function (e) {
     e.preventDefault();
     var value = $(this).val();
     var min = $(this).data('min');
@@ -1169,9 +1170,8 @@ $(document).on('focusout', '.in-num', function(e) {
     // }
 
 
-
 });
-$(document).on('click', '.num-block .num-in span', function(e) {
+$(document).on('click', '.num-block .num-in span', function (e) {
     e.preventDefault();
     var $input = $(this).parents('.num-block').find('input.in-num');
     if ($input.val() == null) {
@@ -1218,7 +1218,7 @@ $(document).on('click', '.num-block .num-in span', function(e) {
     return false;
 });
 
-$(document).ready(function() {
+$(document).ready(function () {
     $('.kv-fa').rating({
         theme: 'krajee-fa',
         filledStar: '<i class="fas fa-star"></i>',
@@ -1234,7 +1234,7 @@ $(document).ready(function() {
     var fadeTime = 300;
 
     /* Assign actions */
-    $(document).on('change', '.product-quantity input,.product-sm-quantity input,.itemQty', function(e) {
+    $(document).on('change', '.product-quantity input,.product-sm-quantity input,.itemQty', function (e) {
         e.preventDefault();
         var id = $(this).data('id');
         var price = $(this).data('price');
@@ -1265,7 +1265,7 @@ $(document).ready(function() {
                         [csrfName]: csrfHash,
                     },
                     dataType: 'json',
-                    success: function(result) {
+                    success: function (result) {
                         csrfName = result.csrfName;
                         csrfHash = result.csrfHash;
                         if (result.error == false) {
@@ -1292,10 +1292,10 @@ $(document).ready(function() {
 
 
     //Remove from Cart.
-    $(document).on('click', '.product-removal button,.product-removal i,.product-sm-removal button', function(e) {
+    $(document).on('click', '.product-removal button,.product-removal i,.product-sm-removal button', function (e) {
         e.preventDefault();
         var id = $(this).data('id');
-        var is_save_for_later = typeof($(this).data('is-save-for-later')) != 'undefined' && $(this).data('is-save-for-later') == 1 ? '1' : '0';
+        var is_save_for_later = typeof ($(this).data('is-save-for-later')) != 'undefined' && $(this).data('is-save-for-later') == 1 ? '1' : '0';
         var product = $(this).parent().parent().parent();
         if (confirm("Are you sure want to remove this?")) {
             if (is_loggedin == 1) {
@@ -1309,7 +1309,7 @@ $(document).ready(function() {
                         [csrfName]: csrfHash
                     },
                     dataType: 'json',
-                    success: function(result) {
+                    success: function (result) {
                         csrfName = result['csrfName'];
                         csrfHash = result['csrfHash'];
                         if (result.error == false) {
@@ -1332,7 +1332,9 @@ $(document).ready(function() {
                 var cart = localStorage.getItem("cart");
                 cart = (localStorage.getItem("cart") !== null) ? JSON.parse(cart) : null;
                 if (cart) {
-                    var new_cart = cart.filter(function(item) { return item.product_variant_id != id });
+                    var new_cart = cart.filter(function (item) {
+                        return item.product_variant_id != id
+                    });
                     localStorage.setItem("cart", JSON.stringify(new_cart));
                     if (cart)
                         display_cart(new_cart);
@@ -1347,7 +1349,7 @@ $(document).ready(function() {
         var subtotal = 0;
 
         /* Sum up row totals */
-        $('.product').each(function() {
+        $('.product').each(function () {
             subtotal += parseFloat($(this).children('.product-line-price').text());
         });
 
@@ -1357,7 +1359,7 @@ $(document).ready(function() {
         var total = subtotal + tax + shipping;
 
         /* Update totals display */
-        $('.totals-value').fadeOut(fadeTime, function() {
+        $('.totals-value').fadeOut(fadeTime, function () {
             $('#cart-subtotal').html(subtotal.toFixed(2));
             $('#cart-tax').html(tax.toFixed(2));
             $('#cart-shipping').html(shipping.toFixed(2));
@@ -1382,8 +1384,8 @@ $(document).ready(function() {
         var quantity = $(quantityInput).val();
         var linePrice = price * quantity;
         /* Update line price display and recalc cart totals */
-        productRow.children('.product-line-price').each(function() {
-            $(this).fadeOut(fadeTime, function() {
+        productRow.children('.product-line-price').each(function () {
+            $(this).fadeOut(fadeTime, function () {
                 $(this).text(currency + ' ' + linePrice.toFixed(2));
                 recalculateCart();
                 mycartTotal();
@@ -1396,7 +1398,7 @@ $(document).ready(function() {
     function removeItem(removeProduct) {
         /* Remove row from DOM and recalc cart total */
         var productRow = $(removeProduct);
-        productRow.slideUp(fadeTime, function() {
+        productRow.slideUp(fadeTime, function () {
             productRow.remove();
             recalculateCart();
             mycartTotal();
@@ -1416,7 +1418,7 @@ $('.js-menu').on('click', () => {
     }
 });
 
-jQuery(document).ready(function($) {
+jQuery(document).ready(function ($) {
     function morphDropdown(element) {
         this.element = element;
         this.mainNavigation = this.element.find('.main-nav');
@@ -1429,35 +1431,35 @@ jQuery(document).ready(function($) {
         this.bindEvents();
     }
 
-    morphDropdown.prototype.checkMq = function() {
+    morphDropdown.prototype.checkMq = function () {
         //check screen size
         var self = this;
         return window.getComputedStyle(self.element.get(0), '::before').getPropertyValue('content').replace(/'/g, "").replace(/"/g, "").split(', ');
     };
 
-    morphDropdown.prototype.bindEvents = function() {
+    morphDropdown.prototype.bindEvents = function () {
         var self = this;
         //hover over an item in the main navigation
-        this.mainNavigationItems.mouseenter(function(event) {
+        this.mainNavigationItems.mouseenter(function (event) {
             //hover over one of the nav items -> show dropdown
             self.showDropdown($(this));
-        }).mouseleave(function() {
-            setTimeout(function() {
+        }).mouseleave(function () {
+            setTimeout(function () {
                 //if not hovering over a nav item or a dropdown -> hide dropdown
                 if (self.mainNavigation.find('.has-dropdown:hover').length == 0 && self.element.find('.dropdown-list:hover').length == 0) self.hideDropdown();
             }, 50);
         });
 
         //hover over the dropdown
-        this.dropdownList.mouseleave(function() {
-            setTimeout(function() {
+        this.dropdownList.mouseleave(function () {
+            setTimeout(function () {
                 //if not hovering over a dropdown or a nav item -> hide dropdown
                 (self.mainNavigation.find('.has-dropdown:hover').length == 0 && self.element.find('.dropdown-list:hover').length == 0) && self.hideDropdown();
             }, 50);
         });
 
         //click on an item in the main navigation -> open a dropdown on a touch device
-        this.mainNavigationItems.on('touchstart', function(event) {
+        this.mainNavigationItems.on('touchstart', function (event) {
             var selectedDropdown = self.dropdownList.find('#' + $(this).data('content'));
             if (!self.element.hasClass('is-dropdown-visible') || !selectedDropdown.hasClass('active')) {
                 event.preventDefault();
@@ -1466,7 +1468,7 @@ jQuery(document).ready(function($) {
         });
     };
 
-    morphDropdown.prototype.showDropdown = function(item) {
+    morphDropdown.prototype.showDropdown = function (item) {
         this.mq = this.checkMq();
         if (this.mq == 'desktop') {
             var self = this;
@@ -1495,14 +1497,14 @@ jQuery(document).ready(function($) {
             item.addClass('active');
             //show the dropdown wrapper if not visible yet
             if (!this.element.hasClass('is-dropdown-visible')) {
-                setTimeout(function() {
+                setTimeout(function () {
                     self.element.addClass('is-dropdown-visible');
                 }, 10);
             }
         }
     };
 
-    morphDropdown.prototype.updateDropdown = function(dropdownItem, height, width, left) {
+    morphDropdown.prototype.updateDropdown = function (dropdownItem, height, width, left) {
         this.dropdownList.css({
             '-moz-transform': 'translateX(' + left + 'px)',
             '-webkit-transform': 'translateX(' + left + 'px)',
@@ -1522,14 +1524,14 @@ jQuery(document).ready(function($) {
         });
     };
 
-    morphDropdown.prototype.hideDropdown = function() {
+    morphDropdown.prototype.hideDropdown = function () {
         this.mq = this.checkMq();
         if (this.mq == 'desktop') {
             this.element.removeClass('is-dropdown-visible').find('.active').removeClass('active').end().find('.move-left').removeClass('move-left').end().find('.move-right').removeClass('move-right');
         }
     };
 
-    morphDropdown.prototype.resetDropdown = function() {
+    morphDropdown.prototype.resetDropdown = function () {
         this.mq = this.checkMq();
         if (this.mq == 'mobile') {
             this.dropdownList.removeAttr('style');
@@ -1538,7 +1540,7 @@ jQuery(document).ready(function($) {
 
     var morphDropdowns = [];
     if ($('.cd-morph-dropdown').length > 0) {
-        $('.cd-morph-dropdown').each(function() {
+        $('.cd-morph-dropdown').each(function () {
             //create a morphDropdown object for each .cd-morph-dropdown
             morphDropdowns.push(new morphDropdown($(this)));
         });
@@ -1547,15 +1549,15 @@ jQuery(document).ready(function($) {
 
         //on resize, reset dropdown style property
         updateDropdownPosition();
-        $(window).on('resize', function() {
+        $(window).on('resize', function () {
             if (!resizing) {
                 resizing = true;
-                (!window.requestAnimationFrame) ? setTimeout(updateDropdownPosition, 300): window.requestAnimationFrame(updateDropdownPosition);
+                (!window.requestAnimationFrame) ? setTimeout(updateDropdownPosition, 300) : window.requestAnimationFrame(updateDropdownPosition);
             }
         });
 
         function updateDropdownPosition() {
-            morphDropdowns.forEach(function(element) {
+            morphDropdowns.forEach(function (element) {
                 element.resetDropdown();
             });
 
@@ -1565,12 +1567,10 @@ jQuery(document).ready(function($) {
 });
 
 
-
-
-$('.navbar-top-search-box input').on('focus', function() {
+$('.navbar-top-search-box input').on('focus', function () {
     $('.navbar-top-search-box .input-group-text').css('border-color', '#0e7dd1');
 });
-$('.navbar-top-search-box input').on('blur', function() {
+$('.navbar-top-search-box input').on('blur', function () {
     $('.navbar-top-search-box .input-group-text').css('border', '1px solid #ced4da');
 });
 
@@ -1688,7 +1688,7 @@ var swiperS = new Swiper('.category-swiper', {
     }
 });
 
-document.querySelectorAll('.product-image-swiper').forEach(function(elem) {
+document.querySelectorAll('.product-image-swiper').forEach(function (elem) {
 
     new Swiper(elem, {
         grabCursor: true,
@@ -1776,7 +1776,7 @@ var galleryTop = new Swiper('.gallery-top-1', {
     }
 });
 
-$(document).ready(function() {
+$(document).ready(function () {
 
     // Using custom configuration
     var zoomConfig = {
@@ -1796,13 +1796,11 @@ $(document).ready(function() {
     var zoomImage = $('img#img_01');
     zoomImage.ezPlus();
 
-    zoomImage.bind('click', function(e) {
+    zoomImage.bind('click', function (e) {
         var ez = $('#img_01').data('ezPlus');
         return false;
     });
 });
-
-
 
 
 function openNav() {
@@ -1824,11 +1822,11 @@ function closeNav() {
     $('#mySidenav').addClass('is-closed-left');
 };
 
-$(document).ready(function() {
+$(document).ready(function () {
 
-    jQuery(document).ready(function() {
+    jQuery(document).ready(function () {
         jQuery("#jquery-accordion-menu").jqueryAccordionMenu();
-        jQuery(".colors a").click(function() {
+        jQuery(".colors a").click(function () {
             if ($(this).attr("class") != "default") {
                 $("#jquery-accordion-menu").removeClass();
                 $("#jquery-accordion-menu").addClass("jquery-accordion-menu").addClass($(this).attr("class"));
@@ -1838,8 +1836,9 @@ $(document).ready(function() {
             }
         });
     });
-});;
-(function($, window, document, undefined) {
+});
+;
+(function ($, window, document, undefined) {
     var pluginName = "jqueryAccordionMenu";
     var defaults = {
         speed: 300,
@@ -1857,15 +1856,15 @@ $(document).ready(function() {
         this.init()
     };
     $.extend(Plugin.prototype, {
-        init: function() {
+        init: function () {
             this.openSubmenu();
             this.submenuIndicators();
             if (defaults.clickEffect) {
                 this.addClickEffect()
             }
         },
-        openSubmenu: function() {
-            $(this.element).children("ul").find("li").bind("click touchstart", function(e) {
+        openSubmenu: function () {
+            $(this.element).children("ul").find("li").bind("click touchstart", function (e) {
                 e.stopPropagation();
                 e.preventDefault();
                 if ($(this).children(".submenu").length > 0) {
@@ -1887,15 +1886,15 @@ $(document).ready(function() {
                 window.location.href = $(this).children("a").attr("href")
             })
         },
-        submenuIndicators: function() {
+        submenuIndicators: function () {
             if ($(this.element).find(".submenu").length > 0) {
                 $(this.element).find(".submenu").siblings("a").append("<span class='submenu-indicator'>+</span>")
             }
         },
-        addClickEffect: function() {
+        addClickEffect: function () {
             var ink, d, x, y;
 
-            $(this.element).find("a > .submenu-indicator").on("click touchstart", function(e) {
+            $(this.element).find("a > .submenu-indicator").on("click touchstart", function (e) {
                 $(".ink").remove();
                 if ($(this).children(".ink").length === 0) {
                     $(this).prepend("<span class='ink'></span>")
@@ -1918,8 +1917,8 @@ $(document).ready(function() {
             })
         }
     });
-    $.fn[pluginName] = function(options) {
-        this.each(function() {
+    $.fn[pluginName] = function (options) {
+        this.each(function () {
             if (!$.data(this, "plugin_" + pluginName)) {
                 $.data(this, "plugin_" + pluginName, new Plugin(this, options))
             }
@@ -1929,8 +1928,7 @@ $(document).ready(function() {
 })(jQuery, window, document);
 
 
-
-document.addEventListener("DOMContentLoaded", function(event) {
+document.addEventListener("DOMContentLoaded", function (event) {
 
 
     const cartButtons = document.querySelectorAll('.cart-button');
@@ -1947,7 +1945,6 @@ document.addEventListener("DOMContentLoaded", function(event) {
     }
 
 
-
 });
 
 
@@ -1957,7 +1954,7 @@ var timer;
 var compareDate = new Date();
 compareDate.setDate(compareDate.getDate() + 7); //just for this demo today + 7 days
 
-timer = setInterval(function() {
+timer = setInterval(function () {
     timeBetweenDates(compareDate);
 }, 1000);
 
@@ -1991,15 +1988,15 @@ function timeBetweenDates(toDate) {
 
 // back-to-top
 
-$(window).scroll(function() {
+$(window).scroll(function () {
     if ($(this).scrollTop() > 50) {
         $('.back-to-top:hidden').stop(true, true).fadeIn();
     } else {
         $('.back-to-top').stop(true, true).fadeOut();
     }
 });
-$(function() {
-    $(".scroll").click(function() {
+$(function () {
+    $(".scroll").click(function () {
         $("html,body").animate({
             scrollTop: $(".sidenav").offset().top
         }, "1000");
@@ -2009,7 +2006,7 @@ $(function() {
 
 // newsletter
 
-$('#newsletter-modal').on('show.bs.modal', function(event) {
+$('#newsletter-modal').on('show.bs.modal', function (event) {
     var button = $(event.relatedTarget) // Button that triggered the modal
     var recipient = button.data('whatever') // Extract info from data-* attributes
 })
@@ -2040,56 +2037,56 @@ var swiper = new Swiper('.swiper-container-client', {
 });
 
 // color switcher
-jQuery(document).ready(function($) {
+jQuery(document).ready(function ($) {
 
-    $("ul.color-style .default").click(function() {
+    $("ul.color-style .default").click(function () {
         $("#color-switcher").attr("href", base_url + "assets/front_end/classic/css/colors/default.css");
         return false;
     });
 
-    $("ul.color-style .peach").click(function() {
+    $("ul.color-style .peach").click(function () {
         $("#color-switcher").attr("href", base_url + "assets/front_end/classic/css/colors/peach.css");
         return false;
     });
 
-    $("ul.color-style .yellow").click(function() {
+    $("ul.color-style .yellow").click(function () {
         $("#color-switcher").attr("href", base_url + "assets/front_end/classic/css/colors/yellow.css");
         return false;
     });
 
-    $("ul.color-style .green").click(function() {
+    $("ul.color-style .green").click(function () {
         $("#color-switcher").attr("href", base_url + "assets/front_end/classic/css/colors/green.css");
         return false;
     });
 
-    $("ul.color-style .purple").click(function() {
+    $("ul.color-style .purple").click(function () {
         $("#color-switcher").attr("href", base_url + "assets/front_end/classic/css/colors/purple.css");
         return false;
     });
-    $("ul.color-style .red").click(function() {
+    $("ul.color-style .red").click(function () {
         $("#color-switcher").attr("href", base_url + "assets/front_end/classic/css/colors/red.css");
         return false;
     });
-    $("ul.color-style .dark-blue").click(function() {
+    $("ul.color-style .dark-blue").click(function () {
         $("#color-switcher").attr("href", base_url + "assets/front_end/classic/css/colors/dark-blue.css");
         return false;
     });
-    $("ul.color-style .orange").click(function() {
+    $("ul.color-style .orange").click(function () {
         $("#color-switcher").attr("href", base_url + "assets/front_end/classic/css/colors/orange.css");
         return false;
     });
-    $("ul.color-style .cyan-dark").click(function() {
+    $("ul.color-style .cyan-dark").click(function () {
         $("#color-switcher").attr("href", base_url + "assets/front_end/classic/css/colors/cyan-dark.css");
         return false;
     });
 
-    $("ul.color-style li a").click(function(e) {
+    $("ul.color-style li a").click(function (e) {
         e.preventDefault();
         $(this).parent().parent().find("a").removeClass("active");
         $(this).addClass("active");
     })
 
-    $("#colors-switcher .color-bottom a.settings").click(function(e) {
+    $("#colors-switcher .color-bottom a.settings").click(function (e) {
         e.preventDefault();
         var div = $("#colors-switcher");
         if (div.css(mode) === "-189px") {
@@ -2110,29 +2107,29 @@ jQuery(document).ready(function($) {
 /**
  * Product Listing Page Starts
  */
-$('#back_to_top').on('click', function() {
-    $("html, body").animate({ scrollTop: 0 }, "slow");
+$('#back_to_top').on('click', function () {
+    $("html, body").animate({scrollTop: 0}, "slow");
 });
-$('#per_page_products a').on('click', function(e) {
+$('#per_page_products a').on('click', function (e) {
     e.preventDefault();
     var per_page = $(this).data('value');
     $(this).parent().siblings('a.dropdown-toggle').text($(this).text());
     location.href = setUrlParameter(location.href, 'per-page', per_page);
 });
-$('#product_sort_by').on('change', function(e) {
+$('#product_sort_by').on('change', function (e) {
     e.preventDefault();
     var sort = $(this).val();
     location.href = setUrlParameter(location.href, 'sort', sort);
 });
 
-$('.sub-category').on('click', function(e) {
+$('.sub-category').on('click', function (e) {
     e.preventDefault();
     var category = $(this).data('value');
     custom_url = setUrlParameter(custom_url, 'category', category);
     location.href = custom_url;
 });
 
-$(document).on('change', '.product_attributes', function(e) {
+$(document).on('change', '.product_attributes', function (e) {
     e.preventDefault();
     var attribute_name = $(this).data('attribute');
     attribute_name = 'filter-' + attribute_name;
@@ -2148,7 +2145,7 @@ $(document).on('change', '.product_attributes', function(e) {
     }
     custom_url = setUrlParameter(custom_url, attribute_name, param);
 });
-$('.product_filter_btn').on('click', function(e) {
+$('.product_filter_btn').on('click', function (e) {
     e.preventDefault();
     location.href = custom_url;
 });
@@ -2247,7 +2244,7 @@ if (getUrlParameter('type') == "list") {
 /**
  * Login and Register Model
  */
-$('.auth_model').on('click', function(e) {
+$('.auth_model').on('click', function (e) {
     e.preventDefault();
     var value = $(this).data('value');
     $('#forgot_password_div').addClass('hide');
@@ -2267,7 +2264,7 @@ $('.auth_model').on('click', function(e) {
 });
 
 // Product Details Page.
-$('.attributes').on('change', function(e) {
+$('.attributes').on('change', function (e) {
     e.preventDefault();
     var selected_attributes = [];
     var attributes_length = "";
@@ -2280,7 +2277,7 @@ $('.attributes').on('change', function(e) {
     var variant_ids = [];
     var image_indexes = [];
     var selected_image_index;
-    $('.variants').each(function() {
+    $('.variants').each(function () {
         prices = {
             price: $(this).data('price'),
             special_price: $(this).data('special_price')
@@ -2292,14 +2289,14 @@ $('.attributes').on('change', function(e) {
         image_indexes.push($(this).data('image-index'));
     });
     attributes_length = variant.length;
-    $('.attributes').each(function(i, e) {
+    $('.attributes').each(function (i, e) {
         if ($(this).prop('checked')) {
             selected_attributes.push($(this).val());
             if (selected_attributes.length == attributes_length) {
                 /* compare the arrays */
                 prices = [];
                 var selected_variant_id = '';
-                $.each(variants, function(i, e) {
+                $.each(variants, function (i, e) {
                     if (arrays_equal(selected_attributes, e)) {
                         is_variant_available = true;
                         prices.push(variant_prices[i]);
@@ -2356,7 +2353,7 @@ function arrays_equal(_arr1, _arr2) {
     return true;
 }
 
-$('.add_to_cart').on('click', function(e) {
+$('.add_to_cart').on('click', function (e) {
     e.preventDefault();
     var qty = $('[name="qty"]').val();
     $('#quick-view').data('data-product-id', $(this).data('productId'));
@@ -2389,10 +2386,10 @@ $('.add_to_cart').on('click', function(e) {
                 [csrfName]: csrfHash,
             },
             dataType: 'json',
-            beforeSend: function() {
+            beforeSend: function () {
                 btn.html('Please Wait').text('Please Wait').attr('disabled', true);
             },
-            success: function(result) {
+            success: function (result) {
                 csrfName = result.csrfName;
                 csrfHash = result.csrfHash;
                 btn.html(btn_html).attr('disabled', false);
@@ -2403,8 +2400,8 @@ $('.add_to_cart').on('click', function(e) {
                     });
                     $('#cart-count').text(result.data.cart_count);
                     var html = '';
-                    $.each(result.data.items, function(i, e) {
-                        var variant = typeof(e.product_variants.variant_values) != 'undefined' && e.product_variants.variant_values != null ? e.product_variants.variant_values : '';
+                    $.each(result.data.items, function (i, e) {
+                        var variant = typeof (e.product_variants.variant_values) != 'undefined' && e.product_variants.variant_values != null ? e.product_variants.variant_values : '';
                         var price = e.special_price < e.price && e.special_price != 0 ? e.special_price : e.price;
                         html += '<div class="row">' +
                             '<div class="cart-product product-sm col-md-12">' +
@@ -2426,7 +2423,7 @@ $('.add_to_cart').on('click', function(e) {
                             '<i class="fa fa-trash"></i>' +
                             '</button>' +
                             '</div>' +
-                            '<div class="product-line-price align-self-center px-1">' + currency + ' ' + (min * price).toLocaleString(undefined, { minimumFractionDigits: 2 }) + '</div>' +
+                            '<div class="product-line-price align-self-center px-1">' + currency + ' ' + (min * price).toLocaleString(undefined, {minimumFractionDigits: 2}) + '</div>' +
                             '</div>' +
                             '</div>' +
                             '</div>';
@@ -2438,7 +2435,16 @@ $('.add_to_cart').on('click', function(e) {
                             icon: 'success',
                             title: "Item added to cart"
                         });
-                        var cart_item = { "product_variant_id": product_variant_id.trim(), "title": title, "description": description, "qty": min, "image": image, "price": price.trim(), "min": min, "step": step };
+                        var cart_item = {
+                            "product_variant_id": product_variant_id.trim(),
+                            "title": title,
+                            "description": description,
+                            "qty": min,
+                            "image": image,
+                            "price": price.trim(),
+                            "min": min,
+                            "step": step
+                        };
                         var cart = localStorage.getItem("cart");
                         cart = (localStorage.getItem("cart") !== null) ? JSON.parse(cart) : null;
                         if (cart !== null && cart !== undefined) {
@@ -2462,7 +2468,7 @@ $('.add_to_cart').on('click', function(e) {
 
 });
 
-$(document).ready(function() {
+$(document).ready(function () {
     var cart = localStorage.getItem("cart");
     cart = (localStorage.getItem("cart") !== null) ? JSON.parse(cart) : null;
     if (cart) {
@@ -2496,7 +2502,7 @@ function display_cart(cart) {
                     '<i class="fa fa-trash"></i>' +
                     '</button>' +
                     '</div>' +
-                    '<div class="product-line-price align-self-center px-1">' + currency + ' ' + (item.qty * item.price).toLocaleString(undefined, { minimumFractionDigits: 2 }) + '</div>' +
+                    '<div class="product-line-price align-self-center px-1">' + currency + ' ' + (item.qty * item.price).toLocaleString(undefined, {minimumFractionDigits: 2}) + '</div>' +
                     '</div>' +
                     '</div>' +
                     '</div>';
@@ -2522,7 +2528,7 @@ function cart_sync() {
             'is_saved_for_later': false,
         },
         dataType: 'json',
-        success: function(result) {
+        success: function (result) {
             csrfName = result.csrfName;
             csrfHash = result.csrfHash;
             if (result.error == false) {
@@ -2537,8 +2543,8 @@ function cart_sync() {
     });
 }
 
-$(document).ready(function() {
-    $(document).on('click', '#clear_cart', function() {
+$(document).ready(function () {
+    $(document).on('click', '#clear_cart', function () {
         if (confirm("Are you sure want to Clear Cart?")) {
             $.ajax({
                 type: "POST",
@@ -2546,7 +2552,7 @@ $(document).ready(function() {
                     [csrfName]: csrfHash
                 },
                 url: base_url + 'cart/clear',
-                success: function(result) {
+                success: function (result) {
                     csrfName = result['csrfName'];
                     csrfHash = result['csrfHash'];
                     location.reload();
@@ -2554,17 +2560,17 @@ $(document).ready(function() {
             });
         }
     });
-    $(document).on('click', '#checkout', function(e) {
+    $(document).on('click', '#checkout', function (e) {
         if (!confirm("Are You Sure want to Checkout?")) {
             e.preventDefault();
         }
     });
 });
 
-$('.quick-view-btn').on('click', function() {
+$('.quick-view-btn').on('click', function () {
     $('#quick-view').data('data-product-id', $(this).data('productId'));
 })
-$('.save-for-later').on('click', function(e) {
+$('.save-for-later').on('click', function (e) {
     e.preventDefault();
     var formdata = new FormData();
     var product_variant_id = $(this).data('id');
@@ -2582,7 +2588,7 @@ $('.save-for-later').on('click', function(e) {
         contentType: false,
         processData: false,
         dataType: 'json',
-        success: function(result) {
+        success: function (result) {
             csrfName = result.csrfName;
             csrfHash = result.csrfHash;
             if (result.error == false) {
@@ -2598,7 +2604,7 @@ $('.save-for-later').on('click', function(e) {
     });
 })
 
-$('.move-to-cart').on('click', function(e) {
+$('.move-to-cart').on('click', function (e) {
     e.preventDefault();
     var formdata = new FormData();
     var product_variant_id = $(this).data('id');
@@ -2616,7 +2622,7 @@ $('.move-to-cart').on('click', function(e) {
         contentType: false,
         processData: false,
         dataType: 'json',
-        success: function(result) {
+        success: function (result) {
             csrfName = result.csrfName;
             csrfHash = result.csrfHash;
             if (result.error == false) {
@@ -2632,7 +2638,7 @@ $('.move-to-cart').on('click', function(e) {
     });
 })
 
-$('.update-order-item').on('click', function(e) {
+$('.update-order-item').on('click', function (e) {
     e.preventDefault();
     var formdata = new FormData();
     var order_item_id = $(this).data('item-id');
@@ -2650,10 +2656,10 @@ $('.update-order-item').on('click', function(e) {
         contentType: false,
         processData: false,
         dataType: 'json',
-        beforeSend: function() {
+        beforeSend: function () {
             t.html('Please Wait').attr('disabled', true);
         },
-        success: function(result) {
+        success: function (result) {
             csrfName = result.csrfName;
             csrfHash = result.csrfHash;
             if (result.error == false) {
@@ -2661,7 +2667,7 @@ $('.update-order-item').on('click', function(e) {
                     icon: 'success',
                     title: result.message
                 });
-                setTimeout(function() {
+                setTimeout(function () {
                     window.location.reload();
                 }, 3000)
 
@@ -2675,7 +2681,7 @@ $('.update-order-item').on('click', function(e) {
         }
     });
 })
-$('.update-order').on('click', function(e) {
+$('.update-order').on('click', function (e) {
     e.preventDefault();
     var formdata = new FormData();
     var order_id = $(this).data('order-id');
@@ -2700,10 +2706,10 @@ $('.update-order').on('click', function(e) {
             contentType: false,
             processData: false,
             dataType: 'json',
-            beforeSend: function() {
+            beforeSend: function () {
                 t.html('Please Wait').attr('disabled', true);
             },
-            success: function(result) {
+            success: function (result) {
                 csrfName = result.csrfName;
                 csrfHash = result.csrfHash;
                 if (result.error == false) {
@@ -2711,7 +2717,7 @@ $('.update-order').on('click', function(e) {
                         icon: 'success',
                         title: result.message
                     });
-                    setTimeout(function() {
+                    setTimeout(function () {
                         window.location.reload();
                     }, 3000)
                 } else {
@@ -2725,7 +2731,7 @@ $('.update-order').on('click', function(e) {
         });
     }
 })
-$('#add-address-form').on('submit', function(e) {
+$('#add-address-form').on('submit', function (e) {
     e.preventDefault();
     var formdata = new FormData(this);
     formdata.append(csrfName, csrfHash);
@@ -2737,10 +2743,10 @@ $('#add-address-form').on('submit', function(e) {
         cache: false,
         contentType: false,
         processData: false,
-        beforeSend: function() {
+        beforeSend: function () {
             $('#save-address-submit-btn').val('Please Wait...').attr('disabled', true);
         },
-        success: function(result) {
+        success: function (result) {
             csrfName = result.csrfName;
             csrfHash = result.csrfHash;
             if (result.error == false) {
@@ -2754,7 +2760,7 @@ $('#add-address-form').on('submit', function(e) {
         }
     })
 })
-$('#city').on('change', function(e) {
+$('#city').on('change', function (e) {
     e.preventDefault();
     $.ajax({
         type: 'POST',
@@ -2764,13 +2770,13 @@ $('#city').on('change', function(e) {
         },
         url: base_url + 'my-account/get-areas',
         dataType: 'json',
-        success: function(result) {
+        success: function (result) {
             csrfName = result.csrfName;
             csrfHash = result.csrfHash;
             if (result.error == false) {
                 var html = '';
                 html += '<option value="">--Select Area--</option>';
-                $.each(result.data, function(i, e) {
+                $.each(result.data, function (i, e) {
                     html += '<option value=' + e.id + '>' + e.name + '</option>';
                 });
                 $('#area').html(html);
@@ -2784,7 +2790,7 @@ $('#city').on('change', function(e) {
         }
     })
 });
-$('#area').on('change', function(e) {
+$('#area').on('change', function (e) {
     e.preventDefault();
     $.ajax({
         type: 'POST',
@@ -2794,7 +2800,7 @@ $('#area').on('change', function(e) {
         },
         url: base_url + 'my-account/get-zipcode',
         dataType: 'json',
-        success: function(result) {
+        success: function (result) {
             csrfName = result.csrfName;
             csrfHash = result.csrfHash;
             if (result.error == false) {
@@ -2808,7 +2814,7 @@ $('#area').on('change', function(e) {
         }
     })
 });
-$('#edit-address-form').on('submit', function(e) {
+$('#edit-address-form').on('submit', function (e) {
     e.preventDefault();
     var formdata = new FormData(this);
     formdata.append(csrfName, csrfHash);
@@ -2820,17 +2826,17 @@ $('#edit-address-form').on('submit', function(e) {
         cache: false,
         contentType: false,
         processData: false,
-        beforeSend: function() {
+        beforeSend: function () {
             $('#edit-address-submit-btn').val('Please Wait...').attr('disabled', true);
         },
-        success: function(result) {
+        success: function (result) {
             csrfName = result.csrfName;
             csrfHash = result.csrfHash;
             if (result.error == false) {
                 $('#edit-address-result').html("<div class='alert alert-success'>" + result.message + "</div>").delay(1500).fadeOut();
                 $('#edit-address-form')[0].reset();
                 $('#address_list_table').bootstrapTable('refresh');
-                setTimeout(function() {
+                setTimeout(function () {
                     $('#address-modal').modal('hide');
                 }, 2000)
             } else {
@@ -2840,7 +2846,7 @@ $('#edit-address-form').on('submit', function(e) {
         }
     })
 })
-$(document).on('click', '.delete-address', function(e) {
+$(document).on('click', '.delete-address', function (e) {
     e.preventDefault();
     if (confirm('Are you sure ? You want to delete this address?')) {
         $.ajax({
@@ -2851,7 +2857,7 @@ $(document).on('click', '.delete-address', function(e) {
             },
             url: base_url + 'my-account/delete-address',
             dataType: 'json',
-            success: function(result) {
+            success: function (result) {
                 csrfName = result.csrfName;
                 csrfHash = result.csrfHash;
                 if (result.error == false) {
@@ -2867,7 +2873,7 @@ $(document).on('click', '.delete-address', function(e) {
     }
 });
 
-$(document).on('click', '.default-address', function(e) {
+$(document).on('click', '.default-address', function (e) {
     e.preventDefault();
     if (confirm('Are you sure ? You want to set this address as default?')) {
         $.ajax({
@@ -2878,9 +2884,9 @@ $(document).on('click', '.default-address', function(e) {
             },
             url: base_url + 'my-account/set-default-address',
             dataType: 'json',
-            success: function(result) {
-                csrfName = result.csrfName;
-                csrfHash = result.csrfHash;
+            success: function (result) {
+                window.csrfName = result.csrfName;
+                window.csrfHash = result.csrfHash;
                 if (result.error == false) {
                     $('#address_list_table').bootstrapTable('refresh');
                     Toast.fire({
@@ -2898,16 +2904,16 @@ $(document).on('click', '.default-address', function(e) {
     }
 });
 
-$(document).on('click', "#forgot_password_link", function(e) {
+$(document).on('click', "#forgot_password_link", function (e) {
     e.preventDefault();
     $('.auth-modal').find('header a').removeClass('active')
     $('#forgot_password_div').removeClass('hide').siblings('section').addClass('hide');
     $('#recaptcha-container-2').html('');
     window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container-2');
-    window.recaptchaVerifier.render().then(function(widgetId) {
+    window.recaptchaVerifier.render().then(function (widgetId) {
         grecaptcha.reset(widgetId);
     });
-    var telInput = $("#forgot_password_number");
+    const telInput = $("#forgot_password_number");
     // initialise plugin
     telInput.intlTelInput({
 
@@ -2925,9 +2931,10 @@ $(document).on('click', "#forgot_password_link", function(e) {
         preventInvalidNumbers: true,
         separateDialCode: true,
         initialCountry: "auto",
-        geoIpLookup: function(callback) {
-            $.get("https://ipinfo.io", function() {}, "jsonp").always(function(resp) {
-                var countryCode = (resp && resp.country) ? resp.country : "";
+        geoIpLookup: function (callback) {
+            $.get("https://ipinfo.io", function () {
+            }, "jsonp").always(function (resp) {
+                const countryCode = (resp && resp.country) ? resp.country : "";
                 callback(countryCode);
             });
         },
@@ -2935,66 +2942,33 @@ $(document).on('click', "#forgot_password_link", function(e) {
     });
 });
 
-$(document).on('submit', '#send_forgot_password_otp_form', function(e) {
+$(document).on('submit', '#reset_forgot_password_form', function (e) {
     e.preventDefault();
-    var send_otp_btn = $('#forgot_password_send_otp_btn').html();
-    $('#forgot_password_send_otp_btn').html('Please Wait...').attr('disabled', true);
-    var phoneNumber = $('.selected-dial-code').html() + $('#forgot_password_number').val();
-    var response = is_user_exist($('#forgot_password_number').val());
-    if (response.error == false) {
+    const submitBtn = $('#reset_password_submit_btn');
+    const send_otp_text = submitBtn.html();
+
+    submitBtn.html('Please Wait...').attr('disabled', true);
+
+    const response = is_user_exist($('#forgot_password_number').val());
+    if (response.error === false) {
         $('#forgot_pass_error_box').html("You have not registered using this number.");
-        $('#forgot_password_send_otp_btn').html(send_otp_btn).attr('disabled', false);
+        submitBtn.html(send_otp_text).attr('disabled', false);
     } else {
-        var appVerifier = window.recaptchaVerifier;
-        firebase.auth().signInWithPhoneNumber(phoneNumber, appVerifier).then(function(confirmationResult) {
-            resetRecaptcha();
-            $('#verify_forgot_password_otp_form').removeClass('d-none');
-            $('#send_forgot_password_otp_form').hide();
-            $('#forgot_pass_error_box').html(response.message);
-            $('#forgot_password_send_otp_btn').html(send_otp_btn).attr('disabled', false);
-            $(document).on('submit', '#verify_forgot_password_otp_form', function(e) {
-                e.preventDefault();
-                var reset_pass_btn_html = $('#reset_password_submit_btn').html();
-                var code = $('#forgot_password_otp').val();
-                var formdata = new FormData(this);
-                var url = base_url + "home/reset-password";
-                $('#reset_password_submit_btn').html('Please Wait...').attr('disabled', true);
-                confirmationResult.confirm(code).then(function(result) {
-                    formdata.append(csrfName, csrfHash);
-                    formdata.append('mobile', $('#forgot_password_number').val());
-                    $.ajax({
-                        type: 'POST',
-                        url: url,
-                        data: formdata,
-                        processData: false,
-                        contentType: false,
-                        cache: false,
-                        dataType: 'json',
-                        beforeSend: function() {
-                            $('#reset_password_submit_btn').html('Please Wait...').attr('disabled', true);
-                        },
-                        success: function(result) {
-                            csrfName = result.csrfName;
-                            csrfHash = result.csrfHash;
-                            $('#reset_password_submit_btn').html(reset_pass_btn_html).attr('disabled', false);
-                            $("#set_password_error_box").html(result.message).show();
-                            if (result.error == false) {
-                                setTimeout(function() {
-                                    window.location.reload();
-                                }, 2000)
-                            }
-                        }
-                    });
-                }).catch(function(error) {
-                    $('#reset_password_submit_btn').html(reset_pass_btn_html).attr('disabled', false);
-                    $("#set_password_error_box").html("Invalid OTP. Please Enter Valid OTP").show();
-                });
-            });
-        }).catch(function(error) {
-            $("#forgot_pass_error_box").html(error.message).show();
-            $('#forgot_password_send_otp_btn').html(send_otp_btn).attr('disabled', false);
-            resetRecaptcha();
-        });
+
+        resetRecaptcha();
+        $('#forgot_pass_error_box').html(response.message);
+        submitBtn.html(send_otp_text).attr('disabled', false);
+
+        const phoneNumber = $('.selected-dial-code').html() + $('#forgot_password_number').val();
+
+        const url = new URL("263774790262","https://wa.me");
+        url.searchParams.append("text", "Hi, I need to reset my password for " + phoneNumber);
+
+        window.open(url.toString(), '_blank').focus();
+
+        setTimeout(function() {
+            window.location.reload();
+        }, 2000)
     }
 })
 
@@ -3020,7 +2994,8 @@ function customer_wallet_query_params(p) {
         search: p.search
     };
 }
-$('#contact-us-form').on('submit', function(e) {
+
+$('#contact-us-form').on('submit', function (e) {
     e.preventDefault();
     var submit_btn_html = $("#contact-us-submit-btn").html();
     var formdata = new FormData(this);
@@ -3033,10 +3008,10 @@ $('#contact-us-form').on('submit', function(e) {
         cache: false,
         contentType: false,
         processData: false,
-        beforeSend: function() {
+        beforeSend: function () {
             $('#contact-us-submit-btn').html('Please Wait...').attr('disabled', true);
         },
-        success: function(result) {
+        success: function (result) {
             csrfName = result.csrfName;
             csrfHash = result.csrfHash;
             if (result.error == false) {
@@ -3056,7 +3031,7 @@ $('#contact-us-form').on('submit', function(e) {
     })
 })
 
-$('#product-rating-form').on('submit', function(e) {
+$('#product-rating-form').on('submit', function (e) {
     e.preventDefault();
     var submit_btn_html = $('#rating-submit-btn').html();
     var formdata = new FormData(this);
@@ -3069,10 +3044,10 @@ $('#product-rating-form').on('submit', function(e) {
         cache: false,
         contentType: false,
         processData: false,
-        beforeSend: function() {
+        beforeSend: function () {
             $('#rating-submit-btn').html('Please Wait...').attr('disabled', true);
         },
-        success: function(result) {
+        success: function (result) {
             csrfName = result.csrfName;
             csrfHash = result.csrfHash;
             if (result.error == false) {
@@ -3093,7 +3068,7 @@ $('#product-rating-form').on('submit', function(e) {
     })
 })
 
-$('#delete_rating').on('click', function(e) {
+$('#delete_rating').on('click', function (e) {
     e.preventDefault();
     if (confirm("Are you sure want to Delete Rating ?")) {
         var rating_id = $(this).data('rating-id');
@@ -3105,7 +3080,7 @@ $('#delete_rating').on('click', function(e) {
             },
             url: $(this).attr('href'),
             dataType: 'json',
-            success: function(result) {
+            success: function (result) {
                 csrfName = result['csrfName'];
                 csrfHash = result['csrfHash'];
                 if (result.error == false) {
@@ -3125,12 +3100,12 @@ $('#delete_rating').on('click', function(e) {
         });
     }
 });
-$('#edit_link').on('click', function(e) {
+$('#edit_link').on('click', function (e) {
     e.preventDefault();
     $('#rating-box').removeClass('d-none');
 });
 
-$('#load-user-ratings').on('click', function(e) {
+$('#load-user-ratings').on('click', function (e) {
     e.preventDefault();
     var limit = $(this).attr('data-limit');
     var offset = $(this).attr('data-offset');
@@ -3147,14 +3122,14 @@ $('#load-user-ratings').on('click', function(e) {
         },
         url: base_url + "products/get-rating",
         dataType: 'json',
-        beforeSend: function() {
+        beforeSend: function () {
             $(this).html('Please wait..').attr('disabled', true);
         },
-        success: function(result) {
+        success: function (result) {
             $(this).html(btn_html).attr('disabled', false);
             if (result.error == false) {
 
-                $.each(result.data.product_rating, function(i, e) {
+                $.each(result.data.product_rating, function (i, e) {
                     html += '<li class="review-container">' +
                         '<div class="review-image">' +
                         '<img src="' + base_url + 'assets/front_end/modern/images/user.png" alt="" width="65" height="65">' +
@@ -3173,7 +3148,7 @@ $('#load-user-ratings').on('click', function(e) {
                         '<p class="text-muted">' + e.comment + '</p>' +
                         '</div>' +
                         '<div class="row reviews">';
-                    $.each(e.images, function(j, image) {
+                    $.each(e.images, function (j, image) {
                         html += '<div class="col-md-2">' +
                             '<div class="review-box">' +
                             '<a href="' + image + '" data-lightbox="review-images">' +
@@ -3189,7 +3164,12 @@ $('#load-user-ratings').on('click', function(e) {
                 });
                 offset += limit;
                 $('#review-list').append(html);
-                $(".kv-fa").rating('create', { filledStar: '<i class="fas fa-star"></i>', emptyStar: '<i class="far fa-star"></i>', size: 'xs', showCaption: false });
+                $(".kv-fa").rating('create', {
+                    filledStar: '<i class="fas fa-star"></i>',
+                    emptyStar: '<i class="far fa-star"></i>',
+                    size: 'xs',
+                    showCaption: false
+                });
                 btn.attr('data-offset', offset);
             } else {
                 Toast.fire({
@@ -3201,7 +3181,7 @@ $('#load-user-ratings').on('click', function(e) {
     });
 });
 
-$('#edit_city').on('change', function(e, area_id) {
+$('#edit_city').on('change', function (e, area_id) {
     e.preventDefault();
     var city_id = $(this).val();
     $.ajax({
@@ -3212,12 +3192,12 @@ $('#edit_city').on('change', function(e, area_id) {
         },
         url: base_url + 'my-account/get-areas',
         dataType: 'json',
-        success: function(result) {
+        success: function (result) {
             csrfName = result.csrfName;
             csrfHash = result.csrfHash;
             if (result.error == false) {
                 var html = '';
-                $.each(result.data, function(i, e) {
+                $.each(result.data, function (i, e) {
                     var is_selected = (e.city_id == city_id && e.id == area_id) ? "selected" : "";
                     html += '<option value=' + e.id + ' ' + is_selected + '>' + e.name + '</option>';
                 });
@@ -3233,7 +3213,7 @@ $('#edit_city').on('change', function(e, area_id) {
     })
 });
 
-$('#edit_area').on('change', function(e, area_id) {
+$('#edit_area').on('change', function (e, area_id) {
     e.preventDefault();
     var area_id1 = (area_id == "" || area_id == "undefined") ? $(this).val() : area_id;
     $.ajax({
@@ -3244,7 +3224,7 @@ $('#edit_area').on('change', function(e, area_id) {
         },
         url: base_url + 'my-account/get-zipcode',
         dataType: 'json',
-        success: function(result) {
+        success: function (result) {
             csrfName = result.csrfName;
             csrfHash = result.csrfHash;
             if (result.error == false) {
@@ -3287,7 +3267,7 @@ function print_filters(filters, prefix = '', target) {
     var attr_checked_status;
     var e_name;
     if (filters != "") {
-        $.each(JSON.parse(filters), function(i, e) {
+        $.each(JSON.parse(filters), function (i, e) {
             e_name = e.name.replace(' ', '-').toLowerCase();
             e_name = decodeURIComponent(e_name);
             attr_name = getUrlParameter('filter-' + e_name);
@@ -3304,7 +3284,7 @@ function print_filters(filters, prefix = '', target) {
             attribute_values_id = e.attribute_values_id.split(',');
             attribute_values = e.attribute_values.split(',');
 
-            $.each(attribute_values, function(j, v) {
+            $.each(attribute_values, function (j, v) {
                 attr_checked_status = ($.inArray(v, selected_attributes) !== -1) ? "checked" : "";
                 new_attr_val = e_name + ' ' + v;
                 html += '<div class="input-container d-flex">' +
@@ -3322,7 +3302,8 @@ function print_filters(filters, prefix = '', target) {
     }
     $(target).html(html);
 }
-$(document).on('closed', '#quick-view', function(e) {
+
+$(document).on('closed', '#quick-view', function (e) {
     $("#modal-product-special-price").html('');
 });
 
@@ -3339,7 +3320,8 @@ const options = {
 function addDarkmodeWidget() {
     new Darkmode(options).showWidget();
 }
-$(document).ready(function() {
+
+$(document).ready(function () {
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(showPosition, showError);
     }
@@ -3374,7 +3356,7 @@ $(document).ready(function() {
     }
 });
 
-$('#send_bank_receipt_form').on('submit', function(e) {
+$('#send_bank_receipt_form').on('submit', function (e) {
     e.preventDefault();
     var formdata = new FormData(this);
     formdata.append(csrfName, csrfHash);
@@ -3383,14 +3365,14 @@ $('#send_bank_receipt_form').on('submit', function(e) {
         type: 'POST',
         url: $(this).attr('action'),
         data: formdata,
-        beforeSend: function() {
+        beforeSend: function () {
             $('#submit_btn').html('Please Wait..').attr('disabled', true);
         },
         cache: false,
         contentType: false,
         processData: false,
         dataType: "json",
-        success: function(result) {
+        success: function (result) {
             // console.log((result));
             csrfHash = result.csrfHash;
             $('#submit_btn').html('Send').attr('disabled', false);
@@ -3412,14 +3394,14 @@ $('#send_bank_receipt_form').on('submit', function(e) {
 });
 
 
-$(document).ready(function() {
+$(document).ready(function () {
     if ($('.hrDiv').length) {
         $('.hrDiv p').addClass('hrDiv');
-        $("div").css({ 'font-size': '', 'font': '' });
+        $("div").css({'font-size': '', 'font': ''});
     }
 });
 
-$('#validate-zipcode-form').on('submit', function(e) {
+$('#validate-zipcode-form').on('submit', function (e) {
     e.preventDefault();
     var formdata = new FormData(this);
     formdata.append(csrfName, csrfHash);
@@ -3428,14 +3410,14 @@ $('#validate-zipcode-form').on('submit', function(e) {
         type: 'POST',
         url: base_url + 'products/check_zipcode',
         data: formdata,
-        beforeSend: function() {
+        beforeSend: function () {
             $('#validate_zipcode').html('Please Wait..').attr('disabled', true);
         },
         cache: false,
         contentType: false,
         processData: false,
         dataType: "json",
-        success: function(result) {
+        success: function (result) {
             csrfHash = result.csrfHash;
             $('#validate_zipcode').html('Check Availability').attr('disabled', false);
             if (result.error == false) {
@@ -3448,7 +3430,7 @@ $('#validate-zipcode-form').on('submit', function(e) {
         }
     });
 });
-$(document).on('submit', '.validate_zipcode_quick_view', function(e) {
+$(document).on('submit', '.validate_zipcode_quick_view', function (e) {
     e.preventDefault();
     var formdata = new FormData(this);
     formdata.append(csrfName, csrfHash);
@@ -3457,14 +3439,14 @@ $(document).on('submit', '.validate_zipcode_quick_view', function(e) {
         type: 'post',
         url: base_url + "products/check-zipcode",
         data: formdata,
-        beforeSend: function() {
+        beforeSend: function () {
             $('#validate_zipcode').html('Please Wait..').attr('disabled', true);
         },
         cache: false,
         contentType: false,
         processData: false,
         dataType: "json",
-        success: function(result) {
+        success: function (result) {
             csrfHash = result.csrfHash;
             $('#validate_zipcode').html('Check Availability').attr('disabled', false);
             if (result.error == false) {
@@ -3477,7 +3459,7 @@ $(document).on('submit', '.validate_zipcode_quick_view', function(e) {
         }
     });
 });
-$(".view_cart_button").click(function() {
+$(".view_cart_button").click(function () {
     if (is_loggedin == 0) {
         $('#modal-custom').iziModal('open');
         $('#login_div').removeClass('hide');
@@ -3492,7 +3474,7 @@ $(".view_cart_button").click(function() {
 
 function mycartTotal() {
     var cartTotal = 0;
-    $("#cart_item_table > tbody > tr > .total-price  > .product-line-price").each(function(i) {
+    $("#cart_item_table > tbody > tr > .total-price  > .product-line-price").each(function (i) {
         cartTotal = parseFloat(cartTotal) + parseFloat($(this).text().replace(/[^\d\.]/g, ''));
     });
     $("#final_total").text(cartTotal.toFixed(2));

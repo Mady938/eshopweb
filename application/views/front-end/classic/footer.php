@@ -46,7 +46,7 @@
         </div>
         <div class="footer-content-footer pt-5 pb-5">
             <div class="row">
-                <div class="col-lg-3 mb-50">
+                <div class="col-lg-3 col-md-6 mb-50">
                     <div class="footer-widget">
                         <div class="footer-logo-footer">
                             <?php $logo = get_settings('web_logo'); ?>
@@ -69,7 +69,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-lg-5 col-md-6 mb-50">
+                <div class="col-lg-3 col-md-6 mb-50">
                     <div class="footer-widget">
                         <div class="footer-widget-heading">
                             <h3><?= !empty($this->lang->line('about_us')) ? $this->lang->line('about_us') : 'About Us' ?></h3>
@@ -81,7 +81,18 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-lg-4 col-md-6 mb-30">
+                <div class="col-lg-3 col-md-6 mb-50">
+                    <div class="footer-widget">
+                        <div class="footer-widget-heading">
+                            <h3>Advert</h3>
+                        </div>
+                        <div class="footer-text">
+                            <!-- Revive Adserver iFrame Tag - Generated with Revive Adserver v5.4.1 -->
+                            <iframe id='a4cfae2a' name='a4cfae2a' src='https://adverti.tyganeutronics.com/www/delivery/afr.php?zoneid=5&amp;cb=INSERT_RANDOM_NUMBER_HERE' frameborder='0' scrolling='no' width='200' height='160' allow='autoplay'><a href='https://adverti.tyganeutronics.com/www/delivery/ck.php?n=a08a4ff9&amp;cb=INSERT_RANDOM_NUMBER_HERE' target='_blank'><img src='https://adverti.tyganeutronics.com/www/delivery/avw.php?zoneid=5&amp;cb=INSERT_RANDOM_NUMBER_HERE&amp;n=a08a4ff9' border='0' alt='' /></a></iframe>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-30">
                     <div class="footer-widget">
                         <div class="footer-widget-heading">
                             <h3><?= !empty($this->lang->line('useful_links')) ? $this->lang->line('useful_links') : 'Useful Links' ?></h3>
@@ -215,7 +226,7 @@
             </div>
             <footer>
                 <button type="button" data-iziModal-close><?= !empty($this->lang->line('cancel')) ? $this->lang->line('cancel') : 'Cancel' ?></button>
-                <button type="submit" class="submit_btn  btn btn-primary btn-block"><?= !empty($this->lang->line('login')) ? $this->lang->line('login') : 'Login' ?></button>
+                <button type="submit" class="submit_btn btn btn-primary btn-block"><?= !empty($this->lang->line('login')) ? $this->lang->line('login') : 'Login' ?></button>
             </footer>
             <br>
             <div class="d-flex justify-content-center">
@@ -224,10 +235,22 @@
         </form>
     </section>
     <section id="register_div">
-        <form id='send-otp-form' class='send-otp-form' action='#'>
+        <form id='sign-up-form' class='sign-up-form' action='<?= base_url('auth/register-user') ?>' method="post">
             <div class="row sign-up-verify-number">
                 <div class="col-12 d-flex justify-content-center pb-4">
+                    <input type="text" class='form-input' placeholder="Username" id="name" name="name">
+                </div>
+                <div class="col-12 d-flex justify-content-center pb-4">
+                    <input type="email" class='form-input' placeholder="Email" id="email" name="email">
+                </div>
+                <div class="col-12 d-flex justify-content-center pb-4">
                     <input type="text" class='form-input' placeholder="Enter Mobile Number" id="phone-number" required>
+                </div>
+                <div class="col-12 d-flex justify-content-center pb-4">
+                    <input type="password" class='form-input' placeholder="Password" id="password" name="password">
+                </div>
+                <div class="col-12 d-flex justify-content-center pb-4">
+                    <div id='registration-error' class='text-center p-3 text-danger'></div>
                 </div>
                 <div class="col-12 d-flex justify-content-center pb-4">
                     <div id="error-msg" class="hide text-danger">Enter a valid number</div>
@@ -241,47 +264,14 @@
             </div>
             <footer>
                 <button type="button" data-iziModal-close><?= !empty($this->lang->line('cancel')) ? $this->lang->line('cancel') : 'Cancel' ?></button>
-                <button id='send-otp-button'><?= !empty($this->lang->line('send_otp')) ? $this->lang->line('send_otp') : 'Send OTP' ?></button>
-            </footer>
-        </form>
-        <form id='verify-otp-form' class='verify-otp-form d-none' action='<?= base_url('auth/register-user') ?>' method="POST">
-            <div class="row sign-up-verify-number">
-                <div class="col-12 d-flex justify-content-center pb-4">
-                    <input type="text" class='form-input' placeholder="OTP" id="otp" name="otp" autocomplete="off">
-                </div>
-                <div class="col-12 d-flex justify-content-center pb-4">
-                    <input type="text" class='form-input' placeholder="Username" id="name" name="name">
-                </div>
-                <div class="col-12 d-flex justify-content-center pb-4">
-                    <input type="email" class='form-input' placeholder="Email" id="email" name="email">
-                </div>
-                <div class="col-12 d-flex justify-content-center pb-4">
-                    <input type="password" class='form-input' placeholder="Password" id="password" name="password">
-                </div>
-                <div class="col-12 d-flex justify-content-center pb-4">
-                    <div id='registration-error' class='text-center p-3 text-danger'></div>
-                </div>
-            </div>
-            <footer>
-                <button data-iziModal-close><?= !empty($this->lang->line('cancel')) ? $this->lang->line('cancel') : 'Cancel' ?></button>
-                <button type="submit" id='register_submit_btn'><?= !empty($this->lang->line('submit')) ? $this->lang->line('submit') : 'Submit' ?></button>
-            </footer>
-        </form>
-        <form id='sign-up-form' class='sign-up-form collapse' action='#'>
-            <input type="text" placeholder="Username" name='username' class='form-input' required>
-            <input type="text" placeholder="email" name='email' class='form-input' required>
-            <input type="password" placeholder="Password" name='password' class='form-input' required>
-            <div id='sign-up-error' class='text-center p-3'></div>
-            <footer>
-                <button type="button" data-iziModal-close><?= !empty($this->lang->line('cancel')) ? $this->lang->line('cancel') : 'Cancel' ?></button>
-                <button type='submit'><?= !empty($this->lang->line('register')) ? $this->lang->line('register') : 'Register' ?></button>
+                <button id="register-button" type='submit'><?= !empty($this->lang->line('register')) ? $this->lang->line('register') : 'Register' ?></button>
             </footer>
         </form>
     </section>
     <section class="hide pt-0" id="forgot_password_div">
         <div class="text-center h5"><?= !empty($this->lang->line('forgot_password')) ? $this->lang->line('forgot_password') : 'Forgot Password' ?></div>
         <hr class="mt-0">
-        <form id="send_forgot_password_otp_form" method="POST" action="#">
+        <form id="reset_forgot_password_form" method="POST" action="#">
             <div class="input-group">
                 <input type="text" class="form-control" name="mobile_number" id="forgot_password_number" placeholder="Mobile number" value="">
             </div>
@@ -290,27 +280,11 @@
             </div>
             <footer>
                 <button type="button" data-iziModal-close><?= !empty($this->lang->line('cancel')) ? $this->lang->line('cancel') : 'Cancel' ?></button>
-                <button type="submit" id="forgot_password_send_otp_btn" class="submit_btn  btn btn-primary btn-block"><?= !empty($this->lang->line('send_otp')) ? $this->lang->line('send_otp') : 'Send OTP' ?></button>
-            </footer>
-            <br>
-            <div class="d-flex justify-content-center">
-                <div class="form-group" id="forgot_pass_error_box"></div>
-            </div>
-        </form>
-        <form id="verify_forgot_password_otp_form" class="d-none" method="post" action="#">
-            <div class="input-group">
-                <input type="text" id="forgot_password_otp" class="form-control" name="otp" placeholder="OTP" value="" autocomplete="off" required>
-            </div>
-            <div class="input-group">
-                <input type="password" class="form-control" name="new_password" placeholder="New Password" value="" required>
-            </div>
-            <footer>
-                <button type="button" data-iziModal-close><?= !empty($this->lang->line('cancel')) ? $this->lang->line('cancel') : 'Cancel' ?></button>
                 <button type="submit" class="submit_btn  btn btn-primary btn-block" id="reset_password_submit_btn"><?= !empty($this->lang->line('submit')) ? $this->lang->line('submit') : 'Submit' ?></button>
             </footer>
             <br>
             <div class="d-flex justify-content-center">
-                <div class="form-group" id="set_password_error_box"></div>
+                <div class="form-group" id="forgot_pass_error_box"></div>
             </div>
         </form>
     </section>
